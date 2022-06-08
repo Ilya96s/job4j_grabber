@@ -24,7 +24,7 @@ import static org.quartz.SimpleScheduleBuilder.*;
 
 public class AlertRabbit {
     public static void main(String[] args) {
-        Properties cfg = getProperties("src/main/resources/rabbit.properties");
+        Properties cfg = getProperties();
         try (Connection cn = getConnection(cfg)) {
             /* Конфигурирование */
             Scheduler scheduler = StdSchedulerFactory.getDefaultScheduler();
@@ -47,7 +47,7 @@ public class AlertRabbit {
                     .build();
             /* Загрузка задачи и триггера в планировщик */
             scheduler.scheduleJob(job, trigger);
-            Thread.sleep(5000);
+            Thread.sleep(10000);
             scheduler.shutdown();
         } catch (ClassNotFoundException | SchedulerException | SQLException | InterruptedException e) {
             e.printStackTrace();
@@ -56,12 +56,11 @@ public class AlertRabbit {
 
     /**
      * Загрузка файла конфигурации
-     * @param path имя файла конфигурации
      * @return Объект Properties
      */
-    public static Properties getProperties(String path) {
+    public static Properties getProperties() {
         Properties cfg = new Properties();
-        try (InputStream in = AlertRabbit.class.getClassLoader().getResourceAsStream(path)) {
+        try (InputStream in = AlertRabbit.class.getClassLoader().getResourceAsStream("rabbit.properties")) {
             cfg.load(in);
         } catch (IOException e) {
             e.printStackTrace();
@@ -98,7 +97,7 @@ public class AlertRabbit {
         @Override
         public void execute(JobExecutionContext context) throws JobExecutionException {
             Connection cn = (Connection) context.getJobDetail().getJobDataMap().get("connection");
-            try (PreparedStatement statement = cn.prepareStatement("insert into rabbit(created_date) values(?);")) {
+            try (PreparedStatement statement = cn.prepareStatement("insert into rabbits(created_date) values(?);")) {
                 statement.setLong(1, System.currentTimeMillis());
                 statement.execute();
             } catch (SQLException e) {
