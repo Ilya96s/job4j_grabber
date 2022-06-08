@@ -3,7 +3,6 @@ package ru.job4j.quartz;
 import org.quartz.*;
 import org.quartz.impl.StdSchedulerFactory;
 
-import java.io.FileInputStream;
 import java.io.InputStream;
 import java.util.Properties;
 
@@ -44,7 +43,7 @@ public class AlertRabbit {
 
     public static int readProperties(String properties) {
         Properties cfg = new Properties();
-        String interval = null;
+        String interval = "";
         try (InputStream in = AlertRabbit.class.getClassLoader().getResourceAsStream(properties)) {
             cfg.load(in);
             interval = cfg.getProperty("rabbit.interval");
