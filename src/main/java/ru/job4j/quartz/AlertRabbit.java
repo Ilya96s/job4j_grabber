@@ -14,7 +14,7 @@ import static org.quartz.SimpleScheduleBuilder.*;
  * Знакомство с библиотекой Quartz. Выполнение действий с периодичностью.
  *
  * @author Ilya Kaltygin
- * @version 1.0
+ * @version 1.1
  */
 
 public class AlertRabbit {
@@ -27,7 +27,9 @@ public class AlertRabbit {
             JobDetail job = newJob(Rabbit.class).build();
             /* Создание расписания и настройка периодичности запуска */
             SimpleScheduleBuilder times = simpleSchedule()
-                    .withIntervalInSeconds(readProperties("rabbit.properties"))
+                    .withIntervalInSeconds(Integer.parseInt(
+                            readProperties("rabbit.properties")
+                            .getProperty("rabbit.interval")))
                     .repeatForever();
             /* Создание триггера и указание когда должен он должен запуститься */
             Trigger trigger = newTrigger()
@@ -41,16 +43,14 @@ public class AlertRabbit {
         }
     }
 
-    public static int readProperties(String properties) {
+    public static Properties readProperties(String properties) {
         Properties cfg = new Properties();
-        String interval = "";
         try (InputStream in = AlertRabbit.class.getClassLoader().getResourceAsStream(properties)) {
             cfg.load(in);
-            interval = cfg.getProperty("rabbit.interval");
         } catch (Exception e) {
             e.printStackTrace();
         }
-        return Integer.parseInt(interval);
+        return cfg;
     }
 
 
