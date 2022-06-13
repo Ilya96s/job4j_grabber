@@ -10,5 +10,5 @@ import java.util.List;
  * @version 1.0
  */
 public interface Parse {
-    List<Post> list(String link) throws IOException;
+    List<Post> list(String link);
 }

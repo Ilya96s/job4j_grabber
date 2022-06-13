@@ -9,7 +9,10 @@ import ru.job4j.grabber.utils.DateTimeParser;
 import ru.job4j.grabber.utils.HabrCareerDateTimeParser;
 
 import java.io.IOException;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 /**
@@ -41,6 +44,19 @@ public class HabrCareerParse {
         return element.text();
     }
 
+    private Post retrievePost(Element titleElement, Element dateElement, Element linkElement) {
+        String vacancyDate = dateElement.attr("datetime");
+        String vacancyName = titleElement.text();
+        String vacancyLink = String.format("%s%s", SOURCE_LINK, linkElement.attr("href"));
+        String vacancyDescription = null;
+        try {
+            vacancyDescription = retrieveDescription(vacancyLink);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return new Post(vacancyName, vacancyLink, vacancyDescription, new HabrCareerDateTimeParser().parse(vacancyDate));
+    }
+
     /**
      * Метод загружает список всех постов
      * @param link ссылка на страницу с вакансиями
@@ -61,22 +77,11 @@ public class HabrCareerParse {
                 Element linkElement = titleElement.child(0);
                 /* Получение даты создания вакансии */
                 Element dateElement = row.select(".vacancy-card__date").first().child(0);
-                String vacancyDate = dateElement.attr("datetime");
-                String vacancyName = titleElement.text();
-                String vacancyLink = String.format("%s%s", SOURCE_LINK, linkElement.attr("href"));
-                /* Получение описания вакансии */
-                String vacancyDescription = null;
-                try {
-                    vacancyDescription = new HabrCareerParse(dateTimeParser).retrieveDescription(vacancyLink);
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-                postList.add(
-                        new Post(vacancyName,
-                                vacancyLink,
-                                vacancyDescription,
-                                new HabrCareerDateTimeParser().parse(vacancyDate)));
+                postList.add(retrievePost(titleElement, dateElement, linkElement));
             });
+        }
+        for (Post p : postList) {
+            System.out.println(p);
         }
         return postList;
     }
@@ -101,5 +106,6 @@ public class HabrCareerParse {
                 System.out.printf("%s : %s : %s%n", vacancyName, link, vacancyDate);
             });
         }
+
     }
 }
