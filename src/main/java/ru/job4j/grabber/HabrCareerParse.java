@@ -20,6 +20,19 @@ public class HabrCareerParse {
 
     private static final String PAGE_LINK = String.format("%s/vacancies/java_developer?page=", SOURCE_LINK);
 
+    /**
+     * Загрузка деталей обявления
+     * @param link ссылка на описание вакансии
+     * @throws IOException
+     */
+    private void retrieveDescription(String link) throws IOException {
+        Document document = Jsoup.connect(link).get();
+        Elements descriptionVacancy = document.select(".style-ugc");
+        for (Element s : descriptionVacancy) {
+            System.out.println(s.text());
+        }
+    }
+
     public static void main(String[] args) throws IOException {
         for (int i = 1; i <= 5; i++) {
             Connection connection = Jsoup.connect(PAGE_LINK + i);
