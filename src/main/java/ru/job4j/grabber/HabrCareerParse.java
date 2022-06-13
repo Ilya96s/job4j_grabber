@@ -5,8 +5,12 @@ import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
+import ru.job4j.grabber.utils.DateTimeParser;
+import ru.job4j.grabber.utils.HabrCareerDateTimeParser;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Парсинг HTML страницы https://career.habr.com/vacancies/java_developer
@@ -16,9 +20,15 @@ import java.io.IOException;
  */
 public class HabrCareerParse {
 
+    private final DateTimeParser dateTimeParser;
+
     private static final String SOURCE_LINK = "https://career.habr.com";
 
     private static final String PAGE_LINK = String.format("%s/vacancies/java_developer?page=", SOURCE_LINK);
+
+    public HabrCareerParse(DateTimeParser dateTimeParser) {
+        this.dateTimeParser = dateTimeParser;
+    }
 
     /**
      * Загрузка деталей обявления
@@ -29,6 +39,46 @@ public class HabrCareerParse {
         Document document = Jsoup.connect(link).get();
         Elements element = document.select(".style-ugc");
         return element.text();
+    }
+
+    /**
+     * Метод загружает список всех постов
+     * @param link ссылка на страницу с вакансиями
+     * @return список постов
+     * @throws IOException
+     */
+    public List<Post> list(String link) throws IOException {
+        List<Post> postList = new ArrayList<>();
+        for (int i = 1; i <= 5; i++) {
+            /* Получение страницы для дальнейшей работы с ней */
+            Document document = Jsoup.connect(link).get();
+            /* Получение всех вакансий на странице */
+            Elements rows = document.select(".vacancy-card__inner");
+            rows.forEach(row -> {
+                /* Получение названия вакансии */
+                Element titleElement = row.select(".vacancy-card__title").first();
+                /* Получение ссылки */
+                Element linkElement = titleElement.child(0);
+                /* Получение даты создания вакансии */
+                Element dateElement = row.select(".vacancy-card__date").first().child(0);
+                String vacancyDate = dateElement.attr("datetime");
+                String vacancyName = titleElement.text();
+                String vacancyLink = String.format("%s%s", SOURCE_LINK, linkElement.attr("href"));
+                /* Получение описания вакансии */
+                String vacancyDescription = null;
+                try {
+                    vacancyDescription = new HabrCareerParse(dateTimeParser).retrieveDescription(vacancyLink);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+                postList.add(
+                        new Post(vacancyName,
+                                vacancyLink,
+                                vacancyDescription,
+                                new HabrCareerDateTimeParser().parse(vacancyDate)));
+            });
+        }
+        return postList;
     }
 
     public static void main(String[] args) throws IOException {
