@@ -25,12 +25,10 @@ public class HabrCareerParse {
      * @param link ссылка на описание вакансии
      * @throws IOException
      */
-    private void retrieveDescription(String link) throws IOException {
+    private String retrieveDescription(String link) throws IOException {
         Document document = Jsoup.connect(link).get();
-        Elements descriptionVacancy = document.select(".style-ugc");
-        for (Element s : descriptionVacancy) {
-            System.out.println(s.text());
-        }
+        Elements element = document.select(".style-ugc");
+        return element.text();
     }
 
     public static void main(String[] args) throws IOException {
