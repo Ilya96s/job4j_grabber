@@ -9,10 +9,7 @@ import ru.job4j.grabber.utils.DateTimeParser;
 import ru.job4j.grabber.utils.HabrCareerDateTimeParser;
 
 import java.io.IOException;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 
 /**
@@ -44,7 +41,18 @@ public class HabrCareerParse {
         return element.text();
     }
 
-    private Post retrievePost(Element titleElement, Element dateElement, Element linkElement) {
+    /**
+     * Парсинг постов
+     * @param row Пост
+     * @return Объект Post, который содержит название, ссылку, дату создания и описание
+     */
+    private Post retrievePost(Element row) {
+        /* Получение названия вакансии */
+        Element titleElement = row.select(".vacancy-card__title").first();
+        /* Получение ссылки */
+        Element linkElement = titleElement.child(0);
+        /* Получение даты создания вакансии */
+        Element dateElement = row.select(".vacancy-card__date").first().child(0);
         String vacancyDate = dateElement.attr("datetime");
         String vacancyName = titleElement.text();
         String vacancyLink = String.format("%s%s", SOURCE_LINK, linkElement.attr("href"));
@@ -54,7 +62,7 @@ public class HabrCareerParse {
         } catch (IOException e) {
             e.printStackTrace();
         }
-        return new Post(vacancyName, vacancyLink, vacancyDescription, new HabrCareerDateTimeParser().parse(vacancyDate));
+        return new Post(vacancyName, vacancyLink, vacancyDescription, dateTimeParser.parse(vacancyDate));
     }
 
     /**
@@ -66,46 +74,20 @@ public class HabrCareerParse {
     public List<Post> list(String link) throws IOException {
         List<Post> postList = new ArrayList<>();
         for (int i = 1; i <= 5; i++) {
+            Connection connection = Jsoup.connect(link);
             /* Получение страницы для дальнейшей работы с ней */
-            Document document = Jsoup.connect(link).get();
+            Document document = connection.get();
             /* Получение всех вакансий на странице */
             Elements rows = document.select(".vacancy-card__inner");
-            rows.forEach(row -> {
-                /* Получение названия вакансии */
-                Element titleElement = row.select(".vacancy-card__title").first();
-                /* Получение ссылки */
-                Element linkElement = titleElement.child(0);
-                /* Получение даты создания вакансии */
-                Element dateElement = row.select(".vacancy-card__date").first().child(0);
-                postList.add(retrievePost(titleElement, dateElement, linkElement));
-            });
-        }
-        for (Post p : postList) {
-            System.out.println(p);
+            rows.forEach(row -> postList.add(retrievePost(row)));
         }
         return postList;
     }
 
     public static void main(String[] args) throws IOException {
-        for (int i = 1; i <= 5; i++) {
-            Connection connection = Jsoup.connect(PAGE_LINK + i);
-            /* Получение страницы для дальнейшей работы с ней */
-            Document document = connection.get();
-            /* Получение всех вакансий на странице */
-            Elements rows = document.select(".vacancy-card__inner");
-            rows.forEach(row -> {
-                /* Получение названия вакансии */
-                Element titleElement = row.select(".vacancy-card__title").first();
-                /* Получение ссылки */
-                Element linkElement = titleElement.child(0);
-                /* Получение даты создания вакансии */
-                Element dateElement = row.select(".vacancy-card__date").first().child(0);
-                String vacancyDate = dateElement.attr("datetime");
-                String vacancyName = titleElement.text();
-                String link = String.format("%s%s", SOURCE_LINK, linkElement.attr("href"));
-                System.out.printf("%s : %s : %s%n", vacancyName, link, vacancyDate);
-            });
-        }
-
+        HabrCareerDateTimeParser habrCareerDateTimeParser = new HabrCareerDateTimeParser();
+        HabrCareerParse habrCareerParse = new HabrCareerParse(habrCareerDateTimeParser);
+        List<Post> list = habrCareerParse.list(PAGE_LINK);
+        Post post = list.get(1);
     }
 }
