@@ -18,7 +18,7 @@ import java.util.List;
  * @author Ilya Kaltygin
  * @version 1.0
  */
-public class HabrCareerParse {
+public class HabrCareerParse implements Parse {
 
     private final DateTimeParser dateTimeParser;
 
@@ -35,10 +35,14 @@ public class HabrCareerParse {
     /**
      * Загрузка деталей обявления
      * @param link ссылка на описание вакансии
-     * @throws IOException
      */
-    private String retrieveDescription(String link) throws IOException {
-        Document document = Jsoup.connect(link).get();
+    private String retrieveDescription(String link) {
+        Document document = null;
+        try {
+            document = Jsoup.connect(link).get();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
         Elements element = document.select(".style-ugc");
         return element.text();
     }
@@ -58,12 +62,7 @@ public class HabrCareerParse {
         String vacancyDate = dateElement.attr("datetime");
         String vacancyName = titleElement.text();
         String vacancyLink = String.format("%s%s", SOURCE_LINK, linkElement.attr("href"));
-        String vacancyDescription = null;
-        try {
-            vacancyDescription = retrieveDescription(vacancyLink);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        String vacancyDescription = retrieveDescription(vacancyLink);
         return new Post(vacancyName, vacancyLink, vacancyDescription, dateTimeParser.parse(vacancyDate));
     }
 
@@ -71,14 +70,19 @@ public class HabrCareerParse {
      * Метод загружает список всех постов
      * @param link ссылка на страницу с вакансиями
      * @return список постов
-     * @throws IOException
      */
-    public List<Post> list(String link) throws IOException {
+    @Override
+    public List<Post> list(String link) {
         List<Post> postList = new ArrayList<>();
         for (int i = 1; i <= NUMBER_OF_PAGES; i++) {
             Connection connection = Jsoup.connect(link + i);
             /* Получение страницы для дальнейшей работы с ней */
-            Document document = connection.get();
+            Document document = null;
+            try {
+                document = connection.get();
+            } catch (IOException e) {
+                throw new IllegalArgumentException(e);
+            }
             /* Получение всех вакансий на странице */
             Elements rows = document.select(".vacancy-card__inner");
             rows.forEach(row -> postList.add(retrievePost(row)));
@@ -86,7 +90,7 @@ public class HabrCareerParse {
         return postList;
     }
 
-    public static void main(String[] args) throws IOException {
+    public static void main(String[] args) {
         HabrCareerDateTimeParser habrCareerDateTimeParser = new HabrCareerDateTimeParser();
         HabrCareerParse habrCareerParse = new HabrCareerParse(habrCareerDateTimeParser);
         List<Post> list = habrCareerParse.list(PAGE_LINK);
