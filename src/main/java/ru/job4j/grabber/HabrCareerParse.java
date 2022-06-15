@@ -26,6 +26,8 @@ public class HabrCareerParse {
 
     private static final String PAGE_LINK = String.format("%s/vacancies/java_developer?page=", SOURCE_LINK);
 
+    public static final int NUMBER_OF_PAGES = 5;
+
     public HabrCareerParse(DateTimeParser dateTimeParser) {
         this.dateTimeParser = dateTimeParser;
     }
@@ -73,8 +75,8 @@ public class HabrCareerParse {
      */
     public List<Post> list(String link) throws IOException {
         List<Post> postList = new ArrayList<>();
-        for (int i = 1; i <= 5; i++) {
-            Connection connection = Jsoup.connect(link);
+        for (int i = 1; i <= NUMBER_OF_PAGES; i++) {
+            Connection connection = Jsoup.connect(link + i);
             /* Получение страницы для дальнейшей работы с ней */
             Document document = connection.get();
             /* Получение всех вакансий на странице */
@@ -88,6 +90,6 @@ public class HabrCareerParse {
         HabrCareerDateTimeParser habrCareerDateTimeParser = new HabrCareerDateTimeParser();
         HabrCareerParse habrCareerParse = new HabrCareerParse(habrCareerDateTimeParser);
         List<Post> list = habrCareerParse.list(PAGE_LINK);
-        Post post = list.get(1);
+        list.forEach(System.out::println);
     }
 }
