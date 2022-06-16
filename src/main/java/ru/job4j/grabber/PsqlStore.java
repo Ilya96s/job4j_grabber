@@ -82,7 +82,7 @@ public class PsqlStore implements Store, AutoCloseable {
      */
     @Override
     public Post findById(int id) {
-        Post post = new Post();
+        Post post = null;
         try (PreparedStatement statement = cnn.prepareStatement("select * from post where id = ?")) {
             statement.setInt(1, id);
             try (ResultSet resultSet = statement.executeQuery()) {
@@ -101,20 +101,13 @@ public class PsqlStore implements Store, AutoCloseable {
      * @param resultSet объект ResultSet
      * @return объект Post
      */
-    private static Post getPostFromResultSet(ResultSet resultSet) {
-        Post post = new Post();
-        try {
-            post = new Post(
-                    resultSet.getInt("id"),
-                    resultSet.getString("name"),
-                    resultSet.getString("text"),
-                    resultSet.getString("link"),
-                    resultSet.getTimestamp("created").toLocalDateTime()
-            );
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-        return post;
+    private static Post getPostFromResultSet(ResultSet resultSet) throws SQLException {
+        return new Post(
+                resultSet.getInt("id"),
+                resultSet.getString("name"),
+                resultSet.getString("text"),
+                resultSet.getString("link"),
+                resultSet.getTimestamp("created").toLocalDateTime());
     }
 
     /**
@@ -143,18 +136,21 @@ public class PsqlStore implements Store, AutoCloseable {
         }
     }
 
-    public static void main(String[] args) throws IOException {
-        PsqlStore psqlStore = new PsqlStore(getProperties("grabber.properties"));
-        DateTimeParser dateTimeParser = new HabrCareerDateTimeParser();
-        HabrCareerParse habrCareerParse = new HabrCareerParse(dateTimeParser);
-        List<Post> parseList = habrCareerParse.list(PAGE_LINK);
-        for (Post post : parseList) {
-            psqlStore.save(post);
-        }
-        List<Post> getAllList = psqlStore.getAll();
-        for (Post post : getAllList) {
-            System.out.println(post);
-        }
-        System.out.println(psqlStore.findById(1));
+    public static void main(String[] args) {
+       try (PsqlStore psqlStore = new PsqlStore(getProperties("grabber.properties"))) {
+           DateTimeParser dateTimeParser = new HabrCareerDateTimeParser();
+           HabrCareerParse habrCareerParse = new HabrCareerParse(dateTimeParser);
+           List<Post> parseList = habrCareerParse.list(PAGE_LINK);
+           for (Post post : parseList) {
+               psqlStore.save(post);
+           }
+           List<Post> getAllList = psqlStore.getAll();
+           for (Post post : getAllList) {
+               System.out.println(post);
+           }
+           System.out.println(psqlStore.findById(22));
+       } catch (Exception e) {
+           e.printStackTrace();
+       }
     }
 }
