@@ -45,11 +45,12 @@ public class PsqlStore implements Store, AutoCloseable {
     @Override
     public void save(Post post) {
         try (PreparedStatement statement = cnn.prepareStatement(
-                "insert into post (name, text, link, created) values (?, ?, ?, ?)")) {
+                "insert into post (name, text, link, created) values (?, ?, ?, ?) on conflict (link) do nothing")) {
             statement.setString(1, post.getTitle());
             statement.setString(2, post.getDescription());
             statement.setString(3, post.getLink());
             statement.setTimestamp(4, Timestamp.valueOf(post.getCreated()));
+            statement.execute();
         } catch (SQLException e) {
             e.printStackTrace();
         }
@@ -65,13 +66,7 @@ public class PsqlStore implements Store, AutoCloseable {
         try (PreparedStatement statement = cnn.prepareStatement("select * from post")) {
             try (ResultSet resultSet = statement.executeQuery()) {
                 while (resultSet.next()) {
-                    postList.add(new Post(
-                            resultSet.getInt("id"),
-                            resultSet.getString("title"),
-                            resultSet.getString("link"),
-                            resultSet.getString("description"),
-                            resultSet.getTimestamp("created").toLocalDateTime()
-                    ));
+                    postList.add(getPostFromResultSet(resultSet));
                 }
             }
         } catch (SQLException e) {
@@ -90,16 +85,9 @@ public class PsqlStore implements Store, AutoCloseable {
         Post post = new Post();
         try (PreparedStatement statement = cnn.prepareStatement("select * from post where id = ?")) {
             statement.setInt(1, id);
-            statement.execute();
             try (ResultSet resultSet = statement.executeQuery()) {
-                while (resultSet.next()) {
-                    post =  new Post(
-                            resultSet.getInt("id"),
-                            resultSet.getString("title"),
-                            resultSet.getString("link"),
-                            resultSet.getString("description"),
-                            resultSet.getTimestamp("created").toLocalDateTime()
-                    );
+                if (resultSet.next()) {
+                    post = getPostFromResultSet(resultSet);
                 }
             }
         } catch (SQLException e) {
@@ -108,6 +96,32 @@ public class PsqlStore implements Store, AutoCloseable {
         return post;
     }
 
+    /**
+     * Получение объекта Post из ResultSet
+     * @param resultSet объект ResultSet
+     * @return объект Post
+     */
+    private static Post getPostFromResultSet(ResultSet resultSet) {
+        Post post = new Post();
+        try {
+            post = new Post(
+                    resultSet.getInt("id"),
+                    resultSet.getString("name"),
+                    resultSet.getString("text"),
+                    resultSet.getString("link"),
+                    resultSet.getTimestamp("created").toLocalDateTime()
+            );
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return post;
+    }
+
+    /**
+     * Загрузка настроек
+     * @param properties файл с настройками
+     * @return объект Properties
+     */
     private static Properties getProperties(String properties) {
         Properties cfg = new Properties();
         try (InputStream in = PsqlStore.class.getClassLoader().getResourceAsStream(properties)) {
