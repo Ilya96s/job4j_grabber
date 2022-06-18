@@ -12,12 +12,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Парсинг HTML страницы https://career.habr.com/vacancies/java_developer
- *
- * @author Ilya Kaltygin
- * @version 1.0
- */
 public class HabrCareerParse implements Parse {
 
     private final DateTimeParser dateTimeParser;
