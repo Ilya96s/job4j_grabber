@@ -70,24 +70,19 @@ public class Grabber implements Grab {
     @Override
     public void init(Parse parse, Store store, Scheduler scheduler) {
         try {
-            /* Передача информации в задачу, интерфейсы Parse и Store нужны для выполнения парсинга и подключения к бд */
             JobDataMap data = new JobDataMap();
             data.put("store", store);
             data.put("parse", parse);
-            /* Создание задачи */
             JobDetail job = newJob(GrabJob.class)
                     .usingJobData(data)
                     .build();
-            /* Расписание выполнения задачи */
             SimpleScheduleBuilder times = simpleSchedule()
                     .withIntervalInSeconds(Integer.parseInt(cfg.getProperty("time")))
                     .repeatForever();
-            /* В триггере указывю расписание и когда начинать запуск */
             Trigger trigger = newTrigger()
                     .startNow()
                     .withSchedule(times)
                     .build();
-            /* Передача триггера и задачи в планировщик */
             scheduler.scheduleJob(job, trigger);
         } catch (SchedulerException e) {
             e.printStackTrace();
@@ -128,7 +123,6 @@ public class Grabber implements Grab {
          */
         @Override
         public void execute(JobExecutionContext context) throws JobExecutionException {
-            /* Извлечение информации, которая была передана с помощью JobDataMap в методе init */
             JobDataMap map = context.getJobDetail().getJobDataMap();
             Store store = (Store) map.get("store");
             Parse parse = (Parse) map.get("parse");

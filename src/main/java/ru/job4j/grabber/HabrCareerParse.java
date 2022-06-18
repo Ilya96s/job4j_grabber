@@ -53,11 +53,8 @@ public class HabrCareerParse implements Parse {
      * @return Объект Post, который содержит название, ссылку, дату создания и описание
      */
     private Post retrievePost(Element row) {
-        /* Получение названия вакансии */
         Element titleElement = row.select(".vacancy-card__title").first();
-        /* Получение ссылки */
         Element linkElement = titleElement.child(0);
-        /* Получение даты создания вакансии */
         Element dateElement = row.select(".vacancy-card__date").first().child(0);
         String vacancyDate = dateElement.attr("datetime");
         String vacancyName = titleElement.text();
@@ -76,14 +73,12 @@ public class HabrCareerParse implements Parse {
         List<Post> postList = new ArrayList<>();
         for (int i = 1; i <= NUMBER_OF_PAGES; i++) {
             Connection connection = Jsoup.connect(link + i);
-            /* Получение страницы для дальнейшей работы с ней */
             Document document = null;
             try {
                 document = connection.get();
             } catch (IOException e) {
                 throw new IllegalArgumentException(e);
             }
-            /* Получение всех вакансий на странице */
             Elements rows = document.select(".vacancy-card__inner");
             rows.forEach(row -> postList.add(retrievePost(row)));
         }
